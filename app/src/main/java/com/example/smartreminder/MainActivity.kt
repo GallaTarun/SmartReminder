@@ -26,12 +26,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Screen.AddEditScreen.route) {
+    NavHost(navController = navController, startDestination = Screen.HomeScreen.route) {
         composable(Screen.HomeScreen.route) {
             HomeScreen()
-        }
-        composable(Screen.AddEditScreen.route) {
-            AddEditScreen()
         }
         composable(Screen.SettingsScreen.route) {
             SettingsScreen()

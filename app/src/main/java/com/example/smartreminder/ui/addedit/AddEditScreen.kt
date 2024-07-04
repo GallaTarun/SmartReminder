@@ -21,70 +21,91 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.TextFieldValue
-import com.example.smartreminder.R
 import androidx.compose.ui.unit.dp
+import com.example.smartreminder.R
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEditScreen() {
-    var showModalBottomSheet by remember { mutableStateOf(true) }
+fun AddEditScreen(
+    onDismissRequest: () -> Unit
+) {
     val modalBottomSheetState = rememberModalBottomSheetState()
 
-    if(showModalBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showModalBottomSheet = false
-            },
-            sheetState = modalBottomSheetState,
-            containerColor = colorResource(id = R.color.surface),
-            contentColor = colorResource(id = R.color.on_surface),
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            dragHandle = {
-                Column(
+    ModalBottomSheet(
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        sheetState = modalBottomSheetState,
+        containerColor = colorResource(id = R.color.surface),
+        contentColor = colorResource(id = R.color.on_surface),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        dragHandle = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                HorizontalDivider(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .width(32.dp),
-                        color = Color.LightGray,
-                        thickness = 4.dp
-                    )
-                }
+                        .width(32.dp),
+                    color = Color.LightGray,
+                    thickness = 4.dp
+                )
             }
-        ) {
-            ModalBottomSheetContent()
         }
+    ) {
+        ModalBottomSheetContent()
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModalBottomSheetContent() {
     val reminderTitle = remember { mutableStateOf("") }
     val reminderNotes = remember { mutableStateOf("") }
-    var showDatePicker = remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState()
+    val showDatePicker = remember { mutableStateOf(false) }
+    val selectedDateMillis = datePickerState.selectedDateMillis
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val selectedDate = remember { mutableStateOf("Choose a date") }
+    if (selectedDateMillis != null) {
+        selectedDate.value = Instant.ofEpochMilli(selectedDateMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .format(formatter)
+    }
+
+    val timePickerState = rememberTimePickerState()
     val showTimePicker = remember { mutableStateOf(false) }
-    var selectedDate = remember { mutableStateOf("") }
-    var selectedTime = remember { mutableStateOf("") }
+    val formattedTime = if (timePickerState.hour == 0 && timePickerState.minute == 0) {
+        "12:00 AM"
+    } else {
+        val time = LocalTime.of(timePickerState.hour, timePickerState.minute)
+        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
+        time.format(formatter)
+    }
 
     Column(
         modifier = Modifier
@@ -158,7 +179,7 @@ fun ModalBottomSheetContent() {
                         contentDescription = null
                     )
                     Text(
-                        text = if(selectedDate.value == "") "Choose date" else selectedDate.value
+                        text = selectedDate.value
                     )
                 }
             }
@@ -191,7 +212,7 @@ fun ModalBottomSheetContent() {
                         contentDescription = null
                     )
                     Text(
-                        text = if(selectedTime.value == "") "Choose time" else selectedDate.value
+                        text = formattedTime
                     )
                 }
             }
@@ -218,15 +239,50 @@ fun ModalBottomSheetContent() {
         }
 
         if(showDatePicker.value) {
-            DatePickerWithDialog { it: String ->
-                selectedDate.value = it
-                showDatePicker.value = false
+            DatePickerWithDialog(
+                onDismissRequest = {
+                    showDatePicker.value = false
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDatePicker.value = false
+                        }
+                    ) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDatePicker.value = false
+                        }
+                    ) { Text("Cancel") }
+                },
+            )
+            {
+                DatePicker(state = datePickerState)
             }
         }
         if(showTimePicker.value) {
-            TimePickerWithDialog { it: String ->
-                selectedTime.value = it
-                showTimePicker.value = false
+            TimePickerWithDialog(
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showTimePicker.value = false
+                        }
+                    ) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showTimePicker.value = false
+                        }
+                    ) { Text("Cancel") }
+                },
+                onDismissRequest = {
+                    showTimePicker.value = false
+                }
+            ) {
+                TimePicker(state = timePickerState)
             }
         }
     }
